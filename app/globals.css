@@ -1,0 +1,62 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: #ffffff;
+  --foreground: #0f172a;
+}
+
+body {
+  color: var(--foreground);
+  background: var(--background);
+}
+
+@layer base {
+  /* Render Markdown beautifully in article pages */
+  .prose h1 {
+    @apply text-3xl md:text-4xl font-extrabold text-gray-900 tracking-tight mt-8 mb-4 first:mt-0;
+  }
+  .prose h2 {
+    @apply text-2xl md:text-3xl font-bold text-gray-900 tracking-tight mt-8 mb-4;
+  }
+  .prose h3 {
+    @apply text-xl md:text-2xl font-bold text-gray-900 mt-6 mb-3;
+  }
+  .prose p {
+    @apply text-gray-600 leading-relaxed mb-6 text-base md:text-[17px];
+  }
+  .prose ul {
+    @apply list-disc list-inside text-gray-600 mb-6 space-y-2 text-base md:text-[17px];
+  }
+  .prose ol {
+    @apply list-decimal list-inside text-gray-600 mb-6 space-y-2 text-base md:text-[17px];
+  }
+  .prose li {
+    @apply ml-2;
+  }
+  .prose li p {
+    @apply inline;
+  }
+  .prose blockquote {
+    @apply border-l-4 border-violet-500 pl-6 italic text-gray-700 my-8 bg-violet-50/40 py-4 pr-4 rounded-r-2xl;
+  }
+  .prose blockquote p {
+    @apply mb-0;
+  }
+  .prose strong {
+    @apply font-semibold text-gray-900;
+  }
+  .prose hr {
+    @apply border-gray-100 my-8;
+  }
+  .prose code {
+    @apply bg-slate-100 text-violet-600 px-1.5 py-0.5 rounded font-mono text-sm font-semibold;
+  }
+  .prose pre {
+    @apply bg-slate-900 text-slate-100 p-5 rounded-2xl font-mono text-sm overflow-x-auto my-6 shadow-sm;
+  }
+  .prose pre code {
+    @apply bg-transparent text-slate-100 p-0 rounded-none font-normal text-sm;
+  }
+}
