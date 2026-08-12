@@ -1,51 +1,49 @@
 import { Metadata } from "next";
 import Link from "next/link";
-import { MOCK_POSTS } from "@/lib/mock-posts";
+import { fetchPosts, fetchCategories } from "@/lib/api-client";
 import PostGrid from "@/components/PostGrid";
 import Pagination from "@/components/Pagination";
 
 export const metadata: Metadata = {
   title: "Blog Articles",
-  description: "Browse all articles published on Chronicle. Filter by technology, design, and lifestyle.",
+  description:
+    "Browse all articles published on Chronicle. Filter by technology, design, and lifestyle.",
 };
 
 interface BlogPageProps {
-  searchParams: {
-    page?: string;
-    category?: string;
-  };
+  searchParams: { page?: string; category?: string };
 }
 
-export default function BlogPage({ searchParams }: BlogPageProps) {
-  const categories = ["All", "Technology", "Design", "Lifestyle"];
-  
-  // Parse parameters
-  const currentCategory = searchParams.category || "All";
-  const currentPage = parseInt(searchParams.page || "1", 10);
+export default async function BlogPage({ searchParams }: BlogPageProps) {
+  const currentCategory = searchParams.category || "";
+  const currentPage = Math.max(1, parseInt(searchParams.page || "1", 10));
   const postsPerPage = 4;
 
-  // Filter posts
-  const filteredPosts = MOCK_POSTS.filter((post) => {
-    if (currentCategory.toLowerCase() === "all") return true;
-    return post.category.toLowerCase() === currentCategory.toLowerCase();
-  });
+  // Fetch posts + categories in parallel
+  const [postsResult, categoriesResult] = await Promise.allSettled([
+    fetchPosts({
+      page: currentPage,
+      limit: postsPerPage,
+      category: currentCategory || undefined,
+    }),
+    fetchCategories(),
+  ]);
 
-  // Calculate pagination
-  const totalPosts = filteredPosts.length;
-  const totalPages = Math.ceil(totalPosts / postsPerPage);
-  const startIndex = (currentPage - 1) * postsPerPage;
-  const paginatedPosts = filteredPosts.slice(startIndex, startIndex + postsPerPage);
+  const postsData =
+    postsResult.status === "fulfilled" ? postsResult.value : null;
+  const categories =
+    categoriesResult.status === "fulfilled" ? categoriesResult.value : [];
 
-  // Helper for generating category link URLs
-  const getCategoryUrl = (cat: string) => {
-    if (cat.toLowerCase() === "all") return "/blog";
-    return `/blog?category=${cat.toLowerCase()}`;
-  };
+  const error =
+    postsResult.status === "rejected"
+      ? (postsResult.reason as Error).message
+      : null;
 
-  const getBasePaginationUrl = () => {
-    if (currentCategory.toLowerCase() === "all") return "/blog";
-    return `/blog?category=${currentCategory.toLowerCase()}`;
-  };
+  const getCategoryUrl = (slug: string) =>
+    slug ? `/blog?category=${slug}` : "/blog";
+
+  const getBasePaginationUrl = () =>
+    currentCategory ? `/blog?category=${currentCategory}` : "/blog";
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 w-full">
@@ -61,33 +59,59 @@ export default function BlogPage({ searchParams }: BlogPageProps) {
 
       {/* Category Tabs */}
       <div className="flex flex-wrap items-center justify-center gap-2 mb-12 border-b border-gray-100 pb-6">
+        {/* "All" tab */}
+        <Link
+          href="/blog"
+          className={`px-5 py-2.5 text-sm font-semibold rounded-xl border transition-all duration-200 ${
+            !currentCategory
+              ? "bg-violet-600 text-white border-violet-600 shadow-sm"
+              : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50 hover:text-gray-900"
+          }`}
+        >
+          All
+        </Link>
         {categories.map((cat) => {
-          const isSelected = currentCategory.toLowerCase() === cat.toLowerCase();
+          const isSelected = currentCategory === cat.slug;
           return (
             <Link
-              key={cat}
-              href={getCategoryUrl(cat)}
+              key={cat.id}
+              href={getCategoryUrl(cat.slug)}
               className={`px-5 py-2.5 text-sm font-semibold rounded-xl border transition-all duration-200 ${
                 isSelected
                   ? "bg-violet-600 text-white border-violet-600 shadow-sm"
                   : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50 hover:text-gray-900"
               }`}
             >
-              {cat}
+              {cat.name}
+              {cat._count && (
+                <span className={`ml-1.5 text-xs ${isSelected ? "text-violet-200" : "text-gray-400"}`}>
+                  ({cat._count.posts})
+                </span>
+              )}
             </Link>
           );
         })}
       </div>
 
+      {/* Error State */}
+      {error && (
+        <div className="text-center py-16">
+          <p className="text-red-500 font-medium text-lg">Failed to load posts</p>
+          <p className="text-gray-400 text-sm mt-2">{error}</p>
+        </div>
+      )}
+
       {/* Post Grid */}
-      <PostGrid posts={paginatedPosts} />
+      {postsData && <PostGrid posts={postsData.posts} />}
 
       {/* Pagination */}
-      <Pagination
-        currentPage={currentPage}
-        totalPages={totalPages}
-        baseUrl={getBasePaginationUrl()}
-      />
+      {postsData && (
+        <Pagination
+          currentPage={currentPage}
+          totalPages={postsData.pagination.totalPages}
+          baseUrl={getBasePaginationUrl()}
+        />
+      )}
     </div>
   );
 }
