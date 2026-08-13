@@ -13,27 +13,12 @@ export default function AdminDashboard() {
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
   const router = useRouter();
 
-  const getCookie = (name: string) => {
-    if (typeof document === "undefined") return "";
-    const match = document.cookie.match(new RegExp("(^| )" + name + "=([^;]*)"));
-    return match ? decodeURIComponent(match[2]) : "";
-  };
-
   const fetchDashboardPosts = async () => {
     setIsLoading(true);
     setError("");
     try {
-      // Fetch posts (include drafts by reusing /api/posts but note GET /api/posts currently returns published posts only.
-      // Wait, does the admin need to see all posts including drafts?
-      // Yes! Since we are reusing the existing API, let's see. If the existing GET /api/posts route only filters published: true
-      // unless we pass a param?
-      // Wait, let's check what the GET /api/posts route does:
-      // const where = { published: true, ... }
-      // Oh! The existing GET /api/posts route actually only returns published posts!
-      // But wait! Is there a way to see draft posts?
-      // The user requested: "Fetch posts from the existing API... Reuse the existing API routes and their current request/response formats. Use the existing GET endpoints for fetching posts".
-      // So we will just call the existing /api/posts route.
-      const res = await fetch("/api/posts?limit=50");
+      // credentials: "include" sends the httpOnly cookie automatically
+      const res = await fetch("/api/posts?limit=50", { credentials: "include" });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to load posts");
       setPosts(data.posts);
@@ -48,11 +33,14 @@ export default function AdminDashboard() {
     fetchDashboardPosts();
   }, []);
 
-  const handleLogout = () => {
-    // Clear token cookie
-    document.cookie = "token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC; SameSite=Lax";
-    router.refresh();
-    router.push("/admin/login");
+  const handleLogout = async () => {
+    try {
+      // Server-side logout clears the httpOnly cookie
+      await fetch("/api/auth/logout", { method: "POST", credentials: "include" });
+    } finally {
+      router.refresh();
+      router.push("/admin/login");
+    }
   };
 
   const handleDelete = async (slug: string, title: string) => {
@@ -62,20 +50,16 @@ export default function AdminDashboard() {
 
     setIsDeleting(slug);
     try {
-      const token = getCookie("token");
+      // credentials: "include" sends the httpOnly cookie automatically
       const res = await fetch(`/api/posts/${slug}`, {
         method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        credentials: "include",
       });
 
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to delete post");
 
-      // Remove from state
       setPosts((prev) => prev.filter((p) => p.slug !== slug));
-      alert("Post deleted successfully");
     } catch (err: unknown) {
       alert(err instanceof Error ? err.message : "An error occurred while deleting the post.");
     } finally {

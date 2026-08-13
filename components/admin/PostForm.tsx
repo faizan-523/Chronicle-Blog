@@ -32,12 +32,6 @@ function slugify(text: string) {
     .replace(/-+/g, "-");
 }
 
-function getCookie(name: string) {
-  if (typeof document === "undefined") return "";
-  const match = document.cookie.match(new RegExp("(^| )" + name + "=([^;]*)"));
-  return match ? decodeURIComponent(match[2]) : "";
-}
-
 export default function PostForm({ initialValues, mode, postSlug }: PostFormProps) {
   const router = useRouter();
 
@@ -104,7 +98,6 @@ export default function PostForm({ initialValues, mode, postSlug }: PostFormProp
     setIsSubmitting(true);
     setNotification(null);
 
-    const token = getCookie("token");
     const payload = {
       title: values.title,
       slug: values.slug,
@@ -127,8 +120,8 @@ export default function PostForm({ initialValues, mode, postSlug }: PostFormProp
         method,
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
         },
+        credentials: "include",
         body: JSON.stringify(payload),
       });
 

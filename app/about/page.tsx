@@ -5,6 +5,9 @@ import { Feather, Heart, Lightbulb, Users } from "lucide-react";
 export const metadata: Metadata = {
   title: "About Us",
   description: "Learn more about Chronicle, our values, our team, and our mission to share knowledge.",
+  alternates: {
+    canonical: "/about",
+  },
 };
 
 export default function AboutPage() {

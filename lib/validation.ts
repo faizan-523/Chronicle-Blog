@@ -25,7 +25,20 @@ export const PostCreateSchema = z.object({
 // --- Post Update (all fields optional) ---
 export const PostUpdateSchema = PostCreateSchema.partial();
 
+// --- Guest Comment ---
+export const CommentCreateSchema = z.object({
+  name: z.string().min(1, "Name is required").max(100, "Name must be 100 characters or fewer"),
+  email: z.string().email("Invalid email address").max(254),
+  content: z
+    .string()
+    .min(1, "Comment cannot be empty")
+    .max(2000, "Comment must be 2000 characters or fewer"),
+  // Honeypot: bots fill this in, humans leave it blank
+  website: z.string().max(0, "Spam detected").optional(),
+});
+
 // TypeScript inferred types
 export type LoginInput = z.infer<typeof LoginSchema>;
 export type PostCreateInput = z.infer<typeof PostCreateSchema>;
 export type PostUpdateInput = z.infer<typeof PostUpdateSchema>;
+export type CommentCreateInput = z.infer<typeof CommentCreateSchema>;

@@ -29,10 +29,8 @@ export default function AdminLoginPage() {
         throw new Error(data.error || "Login failed");
       }
 
-      // Save token in cookie (expires in 7 days)
-      document.cookie = `token=${data.token}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`;
-
-      // Refresh router state and redirect
+      // Cookie is set server-side as httpOnly — no localStorage/document.cookie needed.
+      // Refresh router so middleware picks up the new cookie, then redirect.
       router.refresh();
       router.push("/admin");
     } catch (err: unknown) {

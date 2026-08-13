@@ -7,21 +7,47 @@ import ReactMarkdown from "react-markdown";
 import { fetchPost, fetchPosts } from "@/lib/api-client";
 import CategoryBadge from "@/components/CategoryBadge";
 import PostGrid from "@/components/PostGrid";
+import CommentSection from "@/components/CommentSection";
+
+const BASE_URL =
+  process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
 
 interface BlogPostPageProps {
   params: { slug: string };
 }
 
+interface InitialComment {
+  id: string;
+  name: string;
+  content: string;
+  createdAt: string;
+}
+
 export async function generateMetadata({ params }: BlogPostPageProps): Promise<Metadata> {
   try {
     const post = await fetchPost(params.slug);
+    const imageUrl = post.coverImage.startsWith("/")
+      ? `https://chronicle-blog.com${post.coverImage}`
+      : post.coverImage;
+
     return {
       title: post.title,
       description: post.excerpt,
+      alternates: {
+        canonical: `/blog/${params.slug}`,
+      },
       openGraph: {
         title: post.title,
         description: post.excerpt,
-        images: [{ url: post.coverImage }],
+        images: [{ url: imageUrl }],
+        type: "article",
+        url: `https://chronicle-blog.com/blog/${params.slug}`,
+      },
+      twitter: {
+        card: "summary_large_image",
+        title: post.title,
+        description: post.excerpt,
+        images: [imageUrl],
       },
     };
   } catch {
@@ -60,8 +86,55 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
     // Related posts are non-critical — continue without them
   }
 
+  // Fetch initial comments server-side (non-critical, default to empty)
+  let initialComments: InitialComment[] = [];
+  try {
+    const commentsRes = await fetch(
+      `${BASE_URL}/api/posts/${post.slug}/comments`,
+      { cache: "no-store" }
+    );
+    if (commentsRes.ok) {
+      const data = await commentsRes.json();
+      initialComments = (data.comments ?? []) as InitialComment[];
+    }
+  } catch {
+    // Comments are non-critical
+  }
+
+  let dateIso = new Date().toISOString();
+  try {
+    dateIso = new Date(post.date).toISOString();
+  } catch {}
+
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    headline: post.title,
+    description: post.excerpt,
+    image: post.coverImage.startsWith("/")
+      ? `https://chronicle-blog.com${post.coverImage}`
+      : post.coverImage,
+    datePublished: dateIso,
+    author: {
+      "@type": "Person",
+      name: post.author.name,
+      image: post.author.avatar.startsWith("/")
+        ? `https://chronicle-blog.com${post.author.avatar}`
+        : post.author.avatar,
+    },
+    mainEntityOfPage: {
+      "@type": "WebPage",
+      "@id": `https://chronicle-blog.com/blog/${post.slug}`,
+    },
+  };
+
   return (
-    <article className="w-full">
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <article className="w-full">
       {/* Header Container */}
       <div className="bg-gradient-to-b from-white to-slate-50/50 py-12 md:py-16 border-b border-gray-100/50">
         <div className="max-w-4xl mx-auto px-4 sm:px-6">
@@ -127,11 +200,14 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
       </div>
 
       {/* Post Content */}
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 mb-24">
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 mb-12">
         <div className="prose">
           <ReactMarkdown>{post.content}</ReactMarkdown>
         </div>
       </div>
+
+      {/* Comments */}
+      <CommentSection slug={post.slug} initialComments={initialComments} />
 
       {/* Related Posts */}
       {relatedPosts.length > 0 && (
@@ -145,5 +221,6 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
         </section>
       )}
     </article>
+  </>
   );
 }

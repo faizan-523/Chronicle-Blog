@@ -8,6 +8,9 @@ export const metadata: Metadata = {
   title: "Blog Articles",
   description:
     "Browse all articles published on Chronicle. Filter by technology, design, and lifestyle.",
+  alternates: {
+    canonical: "/blog",
+  },
 };
 
 interface BlogPageProps {

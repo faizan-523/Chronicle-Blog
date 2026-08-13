@@ -11,42 +11,66 @@ async function main() {
   await prisma.category.deleteMany();
   await prisma.author.deleteMany();
 
-  // --- Create admin author ---
+  // --- Upsert admin author ---
   const hashedPassword = await bcrypt.hash("admin1234", 12);
-  const author = await prisma.author.create({
-    data: {
+  const author = await prisma.author.upsert({
+    where: { email: "admin@chronicle.com" },
+    update: {
+      name: "Alex Rivera",
+      password: hashedPassword,
+      role: "ADMIN",
+      avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&h=150&q=80",
+      bio: "Lead Software Architect and founder of Chronicle. Passionate about AI, design systems, and mindful productivity.",
+    },
+    create: {
       name: "Alex Rivera",
       email: "admin@chronicle.com",
       password: hashedPassword,
-      avatar:
-        "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&h=150&q=80",
+      role: "ADMIN",
+      avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&h=150&q=80",
       bio: "Lead Software Architect and founder of Chronicle. Passionate about AI, design systems, and mindful productivity.",
     },
   });
 
-  const designAuthor = await prisma.author.create({
-    data: {
+  const designAuthor = await prisma.author.upsert({
+    where: { email: "sophia@chronicle.com" },
+    update: {
+      name: "Sophia Chen",
+      password: await bcrypt.hash("design1234", 12),
+      role: "AUTHOR",
+      avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=150&h=150&q=80",
+      bio: "Senior UI/UX Designer with a passion for color psychology and premium interface experiences.",
+    },
+    create: {
       name: "Sophia Chen",
       email: "sophia@chronicle.com",
       password: await bcrypt.hash("design1234", 12),
-      avatar:
-        "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=150&h=150&q=80",
+      role: "AUTHOR",
+      avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=150&h=150&q=80",
       bio: "Senior UI/UX Designer with a passion for color psychology and premium interface experiences.",
     },
   });
 
-  const lifestyleAuthor = await prisma.author.create({
-    data: {
+  const lifestyleAuthor = await prisma.author.upsert({
+    where: { email: "emma@chronicle.com" },
+    update: {
+      name: "Emma Watson",
+      password: await bcrypt.hash("lifestyle1234", 12),
+      role: "AUTHOR",
+      avatar: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=150&h=150&q=80",
+      bio: "Wellness coach and writer exploring the intersection of productivity, minimalism, and sustainable living.",
+    },
+    create: {
       name: "Emma Watson",
       email: "emma@chronicle.com",
       password: await bcrypt.hash("lifestyle1234", 12),
-      avatar:
-        "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=150&h=150&q=80",
+      role: "AUTHOR",
+      avatar: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=150&h=150&q=80",
       bio: "Wellness coach and writer exploring the intersection of productivity, minimalism, and sustainable living.",
     },
   });
 
-  console.log("✅ Authors created");
+  console.log("✅ Authors upserted");
 
   // --- Create categories ---
   const techCategory = await prisma.category.create({

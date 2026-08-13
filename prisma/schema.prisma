@@ -10,11 +10,18 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// Extensible role system — only ADMIN can access the dashboard for now
+enum Role {
+  ADMIN
+  AUTHOR
+}
+
 model Author {
   id       String   @id @default(uuid())
   name     String
   email    String   @unique
-  password String   // Hashed password for JWT admin auth
+  password String   // bcrypt-hashed — never plain text
+  role     Role     @default(AUTHOR)
   avatar   String?
   bio      String?
   posts    Post[]
@@ -43,4 +50,15 @@ model Post {
   author      Author    @relation(fields: [authorId], references: [id])
   categoryId  String
   category    Category  @relation(fields: [categoryId], references: [id])
+  comments    Comment[]
+}
+
+model Comment {
+  id        String   @id @default(uuid())
+  postId    String
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  name      String
+  email     String   // private — never exposed in API responses
+  content   String
+  createdAt DateTime @default(now())
 }

@@ -16,6 +16,10 @@ const geistMono = localFont({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://chronicle-blog.com"),
+  alternates: {
+    canonical: "/",
+  },
   title: {
     default: "Chronicle - Modern Design & Technology Blog",
     template: "%s | Chronicle",
